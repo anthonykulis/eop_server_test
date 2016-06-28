@@ -76,6 +76,9 @@ store.addPendingListener(function(){
 
 store.addProcessedListener(function(){
   let next = store_data.processed.shift();
+
+  // not sure why this or one below is in adding the lister. oversight.
+  // i should be firing another event to handle. 
   return next.res.status(200).json(next.req.body);
   // this is where to queue the job for persistency.
 });
@@ -137,6 +140,6 @@ app.post('/request/bid/for/property', dispatchRequest);
 app.put('/change/bid/on/property', dispatchRequest);
 app.delete('/cancel/bid/on/property', dispatchRequest);
 
-// cluster? i like clusters
+// cluster? i like clust
 app.listen(1337, function(){
 });
