@@ -25,6 +25,11 @@ let REJECTED = 'pushed_new_rejected';
 // create my store. not sure how to "break" apart yet so
 // validators can work seemlessly. so bypassing for now.
 // these methods will just push into processed and trigger event
+// ideally, I want to go multi-processed on this. So i think it will
+// be pretty tricky to get the flux events tied into proceess events.
+// i know i cannot send instantied objects across processes, so it
+// will have to be data only, then on the return, recombine data with
+// request and respone objects.
 let store = assign({}, EventEmitter.prototype, {
   create: function(req, res){
     store_data.pending.push({req: req, res: res});
@@ -56,6 +61,10 @@ let store = assign({}, EventEmitter.prototype, {
     this.on(REJECTED, callback);
   }
 
+  // i dont think i need removale of listeners. maybe if I
+  // make a process pool that bind (eg when there are too many processes needed)
+  // so for now, no detaching.
+
 });
 
 // bind events
@@ -68,6 +77,7 @@ store.addPendingListener(function(){
 store.addProcessedListener(function(){
   let next = store_data.processed.shift();
   return next.res.status(200).json(next.req.body);
+  // this is where to queue the job for persistency.
 });
 
 store.addRejectedListener(function(){
@@ -127,6 +137,6 @@ app.post('/request/bid/for/property', dispatchRequest);
 app.put('/change/bid/on/property', dispatchRequest);
 app.delete('/cancel/bid/on/property', dispatchRequest);
 
-
+// cluster? i like clusters
 app.listen(1337, function(){
 });
