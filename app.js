@@ -5,9 +5,46 @@ let bodyParser = require('body-parser')
 let app = express();
 app.use(bodyParser.json());
 
-let dispatcher = require('./dispatchers/ServerDispatcher');
+let dispatcher = require('./lib/dispatchers/ServerDispatcher');
 let EventEmitter = require('events').EventEmitter;
 let assign = require('object-assign');
+let policies = require('./config/policies');
+
+// will be consumed
+let _policies = _.map(policies, _.clone);
+
+// process and process pool
+let Process = require('./lib/mp/Process');
+let pool = {};
+
+// quickly finds out how many policies of types to put into pool
+let min = _.reduce(_policies, function(memo, next){
+  let v = next.shift();
+  while(v){
+    if(memo[v] === undefined){
+      memo[v] = 1;
+    }
+    else {
+      memo[v]++;
+    }
+    v = next.shift();
+  }
+
+  return memo;
+}, {});
+
+
+// put into pool
+let tick = 0;
+_.each(min, function(v,k){
+  if(pool[k] === undefined) pool[k] = [];
+  while(v--){
+    let p = new Process(`${k}_${tick}`);
+    pool[k].push(p);
+    p.start(k);
+    tick++;
+  }
+});
 
 // just a dumb store for now
 let store_data = {
@@ -69,16 +106,34 @@ let store = assign({}, EventEmitter.prototype, {
 
 // bind events
 store.addPendingListener(function(){
+  let _this = this;
+  let grabbed = {};
   let next = store_data.pending.shift();
-  store_data.processed.push(next);
-  this.emit(PROCESSED);
+  let validators = policies.REQUEST_BID_FOR_PROPERTY;
+  let callback = function(message){
+
+    if(message.success){
+      store_data.processed.push(next);
+      _this.emit(PROCESSED);
+    }
+    else {
+      store_data.rejected.push(next);
+      _this.emit(REJECTED);
+    }
+    pool[message.name].push(grabbed[message.name]);
+    delete grabbed[message.name];
+  }
+
+  let done = _.after(validators.length, callback);
+
+  _.each(validators, (function(name){
+    grabbed[name] = pool[name].shift();
+    grabbed[name].validate(next.req.body, done);
+  }));
 });
 
 store.addProcessedListener(function(){
   let next = store_data.processed.shift();
-
-  // not sure why this or one below is in adding the lister. oversight.
-  // i should be firing another event to handle. 
   return next.res.status(200).json(next.req.body);
   // this is where to queue the job for persistency.
 });
