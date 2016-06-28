@@ -7,7 +7,7 @@ an `npm install` followed by `npm start` should be all you need to get it going.
 *  all `GET` requests are banned.
 *  one `POST` route is available: `/request/bid/for/property`
 *  one `PUT` route is availalbe: `/change/bid/on/property`
-*  one `delete` route is available: `/cancel/bid/on/property`
+*  one `DELETE` route is available: `/cancel/bid/on/property`
 
 ### notes ###
 *  not all routes do something. I am tinkering so shit may change. right now I think I have the `POST` method available.
