@@ -22,14 +22,11 @@ let min = _.reduce(_policies, function(memo, next){
   let v = next.shift();
   while(v){
     if(memo[v] === undefined){
-      memo[v] = 1;
+      memo[v] = 0;
     }
-    else {
-      memo[v]++;
-    }
+    memo[v]++;
     v = next.shift();
   }
-
   return memo;
 }, {});
 
@@ -45,6 +42,7 @@ _.each(min, function(v,k){
     tick++;
   }
 });
+
 
 // just a dumb store for now
 let store_data = {
