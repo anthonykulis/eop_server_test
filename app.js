@@ -108,9 +108,10 @@ store.addPendingListener(function(){
   let grabbed = {};
   let next = store_data.pending.shift();
   let validators = policies.REQUEST_BID_FOR_PROPERTY;
-  let callback = function(message){
 
-    if(message.success){
+  let callback = function(validator){
+
+    if(validator.success){
       store_data.processed.push(next);
       _this.emit(PROCESSED);
     }
@@ -118,8 +119,8 @@ store.addPendingListener(function(){
       store_data.rejected.push(next);
       _this.emit(REJECTED);
     }
-    pool[message.name].push(grabbed[message.name]);
-    delete grabbed[message.name];
+    pool[validator.name].push(grabbed[validator.name]);
+    delete grabbed[validator.name];
   }
 
   let done = _.after(validators.length, callback);
@@ -127,6 +128,8 @@ store.addPendingListener(function(){
   _.each(validators, (function(name){
     grabbed[name] = pool[name].shift();
     grabbed[name].validate(next.req.body, done);
+    // let m = {success: true, name: 'mp_validator'};
+    // done(m);
   }));
 });
 
